@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Countdown Battery</title>
+<style>
+  /* ====== EDIT YOUR DATES HERE (YYYY-MM-DD) ====== */
+  /* (see the CONFIG block in the <script> below)   */
+
+  :root { --bg:#ffffff; --fg:#37352f; --muted:#9b9a97; --shell:#37352f; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#191919; --fg:#e6e6e5; --muted:#8a8a88; --shell:#e6e6e5; }
+  }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg);
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  body { display:flex; align-items:center; justify-content:center; }
+  .wrap { display:flex; flex-direction:column; align-items:center; gap:12px; padding:16px; }
+  .battery { display:flex; align-items:center; }
+  .shell { position:relative; width:220px; height:90px; border:4px solid var(--shell);
+    border-radius:14px; padding:5px; box-sizing:border-box; }
+  .fill { height:100%; width:0%; border-radius:7px; transition:width .6s ease, background .6s ease; }
+  .pct { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:30px; font-weight:700; mix-blend-mode:difference; color:#fff; }
+  .cap { width:10px; height:34px; background:var(--shell); border-radius:0 5px 5px 0; margin-left:3px; }
+  .label { font-size:15px; font-weight:600; }
+  .sub { font-size:13px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="label" id="label"></div>
+  <div class="battery">
+    <div class="shell"><div class="fill" id="fill"></div><div class="pct" id="pct">–</div></div>
+    <div class="cap"></div>
+  </div>
+  <div class="sub" id="sub"></div>
+</div>
+
+<script>
+  // ================= CONFIG =================
+  const CONFIG = {
+    start: "2026-09-01",   // starting day
+    end:   "2026-09-30",   // ending day (counted fully, until midnight)
+    label: "September"     // title shown above the battery ("" to hide)
+  };
+  // ==========================================
+
+  // Optional: override via URL, e.g. page.html?start=2026-09-01&end=2026-09-30&label=Sprint
+  const q = new URLSearchParams(location.search);
+  const startStr = q.get("start") || CONFIG.start;
+  const endStr   = q.get("end")   || CONFIG.end;
+  const label    = q.get("label") ?? CONFIG.label;
+
+  const DAY = 86400000;
+  const toLocal = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+  const start = toLocal(startStr);
+  const end   = new Date(toLocal(endStr).getTime() + DAY); // end date is inclusive
+
+  function update() {
+    const now = Date.now();
+    const total = end - start;
+    const passed = Math.min(Math.max(now - start, 0), total);
+    const left = 1 - passed / total;               // fraction remaining
+    const pct = Math.round(left * 1000) / 10;      // one decimal
+    const daysLeft = Math.max(0, Math.ceil((end - now) / DAY));
+
+    const fill = document.getElementById("fill");
+    fill.style.width = (left * 100) + "%";
+    fill.style.background = left > 0.5 ? "#4caf50" : left > 0.2 ? "#f5b400" : "#e5484d";
+
+    document.getElementById("pct").textContent = pct + "%";
+    document.getElementById("label").textContent = label;
+    document.getElementById("sub").textContent =
+      now < start ? "Not started yet" :
+      daysLeft === 0 ? "Done 🎉" :
+      daysLeft + (daysLeft === 1 ? " day" : " days") + " left";
+  }
+  update();
+  setInterval(update, 60000); // refresh every minute
+</script>
+</body>
+</html>
